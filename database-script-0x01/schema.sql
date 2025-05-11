@@ -91,3 +91,11 @@ CREATE TABLE Message (
     INDEX (sender_id),
     INDEX (recipient_id)
 );
+
+-- update the primary keys to be auto-incrementing UUIDs
+ALTER TABLE User MODIFY user_id CHAR(36) NOT NULL DEFAULT (UUID());
+ALTER TABLE Property MODIFY property_id CHAR(36) NOT NULL DEFAULT (UUID());
+ALTER TABLE Booking MODIFY booking_id CHAR(36) NOT NULL DEFAULT (UUID());
+ALTER TABLE Payment MODIFY payment_id CHAR(36) NOT NULL DEFAULT (UUID());
+ALTER TABLE Review MODIFY review_id CHAR(36) NOT NULL DEFAULT (UUID());
+ALTER TABLE Message MODIFY message_id CHAR(36) NOT NULL DEFAULT (UUID());

@@ -23,6 +23,8 @@ SHOW INDEX FROM User;
 
 -- explain the query plan for a user lookup by email
 EXPLAIN SELECT * FROM User WHERE email = 'juan14@example.org';
+-- With analyze to get execution statistics
+EXPLAIN ANALYZE SELECT * FROM User WHERE email = 'juan14@example.org';
 
 -- PROPERTY TABLE INDEXES
 -- ============================================================================
@@ -44,6 +46,10 @@ CREATE INDEX idx_property_location_price ON Property(location, pricepernight);
 
 -- Composite index for host properties with creation date
 CREATE INDEX idx_property_host_created ON Property(host_id, created_at);
+
+-- Analyze property queries
+EXPLAIN ANALYZE SELECT * FROM Property WHERE location = 'New York' AND pricepernight < 200;
+EXPLAIN ANALYZE SELECT * FROM Property WHERE host_id = 101;
 
 -- BOOKING TABLE INDEXES
 -- ============================================================================
@@ -76,6 +82,10 @@ CREATE INDEX idx_booking_property_status ON Booking(property_id, status, start_d
 -- Total price for revenue queries
 CREATE INDEX idx_booking_total_price ON Booking(total_price);
 
+-- Analyze booking queries
+EXPLAIN ANALYZE SELECT * FROM Booking WHERE property_id = 42 AND start_date >= '2023-01-01' AND end_date <= '2023-01-15';
+EXPLAIN ANALYZE SELECT * FROM Booking WHERE user_id = 123 AND status = 'confirmed';
+
 -- REVIEW TABLE INDEXES
 -- ============================================================================
 
@@ -94,6 +104,9 @@ CREATE INDEX idx_review_created_at ON Review(created_at);
 -- Composite index for property rating analysis
 CREATE INDEX idx_review_property_rating ON Review(property_id, rating, created_at);
 
+-- Analyze review queries
+EXPLAIN ANALYZE SELECT * FROM Review WHERE property_id = 42 ORDER BY rating DESC;
+
 -- PAYMENT TABLE INDEXES
 -- ============================================================================
 
@@ -108,6 +121,9 @@ CREATE INDEX idx_payment_date ON Payment(payment_date);
 
 -- Composite index for payment analysis
 CREATE INDEX idx_payment_method_date ON Payment(payment_method, payment_date);
+
+-- Analyze payment queries
+EXPLAIN ANALYZE SELECT * FROM Payment WHERE payment_method = 'credit_card' AND payment_date > '2023-01-01';
 
 -- MESSAGE TABLE INDEXES
 -- ============================================================================
@@ -124,6 +140,9 @@ CREATE INDEX idx_message_sent_at ON Message(sent_at);
 -- Composite index for conversation threads
 CREATE INDEX idx_message_conversation ON Message(sender_id, recipient_id, sent_at);
 
+-- Analyze message queries
+EXPLAIN ANALYZE SELECT * FROM Message WHERE sender_id = 42 AND recipient_id = 101 ORDER BY sent_at DESC;
+
 -- ============================================================================
 -- 4. SPECIALIZED INDEXES FOR COMMON QUERY PATTERNS
 -- ============================================================================
@@ -133,8 +152,8 @@ CREATE INDEX idx_availability_check ON Booking(property_id, start_date, end_date
 
 -- Index for host revenue analysis
 CREATE INDEX idx_host_revenue ON Property(host_id) 
-  -- Note: This would be better as a covering index in some databases
-  -- INCLUDE (name, pricepernight) -- PostgreSQL syntax
+    -- Note: This would be better as a covering index in some databases
+    -- INCLUDE (name, pricepernight) -- PostgreSQL syntax
 ;
 
 -- Index for popular properties (booking count analysis)
@@ -147,6 +166,26 @@ CREATE INDEX idx_user_activity ON Booking(user_id, status, total_price, created_
 -- This would require a materialized view or denormalized data in production
 -- CREATE INDEX idx_location_rating ON Property(location, /* avg_rating would go here */);
 
+-- Analyze complex query patterns
+EXPLAIN ANALYZE 
+SELECT p.id, p.name, p.location, COUNT(b.id) as booking_count 
+FROM Property p
+JOIN Booking b ON p.id = b.property_id
+WHERE b.status = 'confirmed' 
+GROUP BY p.id
+ORDER BY booking_count DESC
+LIMIT 10;
+
+EXPLAIN ANALYZE
+SELECT * FROM Property p
+WHERE p.location = 'Miami' 
+AND p.id NOT IN (
+    SELECT property_id FROM Booking 
+    WHERE status = 'confirmed'
+    AND ((start_date <= '2023-12-24' AND end_date >= '2023-12-20') 
+    OR (start_date <= '2023-12-30' AND end_date >= '2023-12-24'))
+);
+
 -- ============================================================================
 -- 5. MAINTENANCE COMMANDS
 -- ============================================================================
@@ -158,4 +197,3 @@ ANALYZE TABLE Booking;
 ANALYZE TABLE Review;
 ANALYZE TABLE Payment;
 ANALYZE TABLE Message;
-

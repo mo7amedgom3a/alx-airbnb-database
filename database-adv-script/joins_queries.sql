@@ -51,5 +51,5 @@ SELECT
     b.status,
     b.created_at AS booking_created_at
 FROM User u
-LEFT JOIN Booking b ON u.user_id = b.user_id
+FULL OUTER JOIN Booking b ON u.user_id = b.user_id
 ORDER BY u.user_id, b.created_at DESC;

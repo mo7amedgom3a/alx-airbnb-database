@@ -264,6 +264,51 @@ EXPLAIN SELECT * FROM users ORDER BY created_at;
 -- Solution: Create index on created_at
 ```
 
+### Write SQL CREATE INDEX commands to create appropriate indexes for those columns and save them on database_index.sql
+
+```sql
+-- File: database_index.sql
+-- Common index creation for frequently queried columns
+
+-- Create index for users table on username
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
+-- Create index for posts table on user_id (foreign key)
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+
+-- Create composite index for filtering and sorting orders
+CREATE INDEX IF NOT EXISTS idx_orders_status_date ON orders(status, created_at);
+
+-- Create index for products table for text search
+CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+
+-- Create index for commonly joined columns
+CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+
+-- Create index for frequently filtered boolean column
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(active);
+```
+
+### Measure the query performance before and after adding indexes using EXPLAIN or ANALYZE
+
+```sql
+-- Before adding index
+EXPLAIN ANALYZE SELECT * FROM users WHERE username = 'john_doe';
+-- Results might show "Sequential Scan on users" with high cost
+
+-- After adding index
+-- First, run the CREATE INDEX command from database_index.sql:
+-- CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
+-- Then analyze again
+EXPLAIN ANALYZE SELECT * FROM users WHERE username = 'john_doe';
+-- Results should now show "Index Scan using idx_users_username" with lower cost
+
+-- Compare query execution times:
+-- Before: Execution Time: 10.254 ms (example)
+-- After: Execution Time: 0.128 ms (example)
+```
+
 ## Database-Specific Notes
 
 ### PostgreSQL
